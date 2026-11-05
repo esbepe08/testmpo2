@@ -1,0 +1,37 @@
+import fs from 'fs'; import os from 'os'; import path from 'path'; import { spawnSync } from 'child_process'; import { fileURLToPath } from 'url';
+import { suite } from './lib.mjs';
+const { ok, group, done } = suite('Vercel build step: which environment variable names are accepted');
+const HERE = path.dirname(fileURLToPath(import.meta.url)), SCRIPT = path.resolve(HERE, '../../tools/write-env.mjs');
+const jwt = role => `h.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.s`;
+function build(env) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'eas-env-')); fs.mkdirSync(path.join(root, 'js/online'), { recursive: true });
+  const r = spawnSync('node', [SCRIPT], { env: { PATH: process.env.PATH, EAS_ROOT: root, ...env }, encoding: 'utf8' });
+  const f = path.join(root, 'js/online/env.js'), cfg = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8').match(/ONLINE_ENV = (\{.*\});/)[1]) : null;
+  return { code: r.status, out: r.stdout + r.stderr, cfg };
+}
+const URL = 'https://abcdefgh.supabase.co', ANON = jwt('anon');
+group('names');
+let b = build({ SUPABASE_URL: URL, SUPABASE_ANON_KEY: ANON });
+ok(b.code === 0 && b.cfg.url === URL && b.cfg.anonKey === ANON && /configured/.test(b.out), 'SUPABASE_URL + SUPABASE_ANON_KEY (the documented names)');
+b = build({ SUPABASE_URL: URL, SUPABASE_API_KEY: ANON });
+ok(b.code === 0 && b.cfg.anonKey === ANON && /key from SUPABASE_API_KEY/.test(b.out), 'SUPABASE_API_KEY works too (what the Vercel project already uses)');
+b = build({ SUPABASE_URL: URL, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abc' });
+ok(b.code === 0 && b.cfg.anonKey === 'sb_publishable_abc', 'a new-style publishable key works');
+b = build({ NEXT_PUBLIC_SUPABASE_URL: URL, NEXT_PUBLIC_SUPABASE_ANON_KEY: ANON });
+ok(b.code === 0 && b.cfg.url === URL, 'NEXT_PUBLIC_ names work');
+b = build({ SUPABASE_URL: URL, SUPABASE_ANON_KEY: ANON, SUPABASE_API_KEY: 'other' });
+ok(b.cfg.anonKey === ANON, 'when both exist, the documented name wins');
+b = build({ SUPABASE_URL: URL + '/rest/v1/', SUPABASE_ANON_KEY: ANON });
+ok(b.cfg.url === URL, 'a pasted API URL (…/rest/v1/) is cleaned to the project URL');
+group('safety');
+b = build({ SUPABASE_URL: URL, SUPABASE_API_KEY: jwt('service_role') });
+ok(b.code === 1 && b.cfg === null && /SECRET/.test(b.out), 'a service-role JWT is refused and nothing is written');
+b = build({ SUPABASE_URL: URL, SUPABASE_ANON_KEY: 'sb_secret_xyz' });
+ok(b.code === 1 && b.cfg === null, 'a new-style secret key is refused');
+group('what the build log says');
+b = build({ SUPABASE_URL: URL });
+ok(b.code === 0 && b.cfg.anonKey === '' && /DISABLED/.test(b.out) && /key: none/.test(b.out), 'a missing key disables online play and the log names what was found');
+b = build({});
+ok(b.code === 0 && /URL: none; key: none/.test(b.out), 'nothing set: local play still builds');
+ok(!/abcdefgh|h\./.test(build({ SUPABASE_URL: URL, SUPABASE_ANON_KEY: ANON }).out.replace(/URL from|key from/g, '')), 'the log never prints the values');
+done();
