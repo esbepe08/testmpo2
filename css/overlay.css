@@ -1,0 +1,44 @@
+/* Full-screen notice card (pause, undo request): js/overlay.js. One card, dimmed and blurred backdrop, the game behind it inert. */
+.mOv[hidden]{display:none}
+.mOv{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));
+  background:color-mix(in srgb,var(--backdrop,#000) 78%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.mOvCard{width:min(92vw,440px);display:grid;gap:14px;justify-items:center;text-align:center;padding:28px 22px 22px;border-radius:22px;background:var(--dialog-bg);color:var(--text-main);
+  border:1px solid var(--dialog-line);box-shadow:0 24px 70px #0009;outline:none}
+.mOvIc{width:84px;height:84px;display:grid;place-items:center;border-radius:50%;border:2px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.mOvIc svg{width:44px;height:44px;fill:currentColor;stroke:none}
+.mOv[data-tone=undo] .mOvIc svg,.mOv[data-tone=judge] .mOvIc svg{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.mOvCard h2{margin:0;font-size:clamp(1.35rem,5vw,1.8rem);line-height:1.3}
+#mOvB p{margin:0 0 4px;line-height:1.7;opacity:.92}
+.mOvTime{font:700 1.7rem var(--font);font-variant-numeric:tabular-nums;direction:ltr;color:var(--accent)}
+.mOvTime[hidden]{display:none}
+.mOvAct{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;width:100%}
+.mOvAct .btn{flex:1 1 140px;min-height:50px;font-size:1.05rem}
+.mOvAct .btn:disabled{opacity:.6}
+@media(prefers-reduced-motion:no-preference){
+  .mOv:not([hidden]) .mOvCard{animation:ovIn .22s ease-out}
+  .mOv[data-tone=pause] .mOvIc{animation:ovPulse 2.4s ease-in-out infinite}
+}
+@keyframes ovIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes ovPulse{50%{box-shadow:0 0 0 12px color-mix(in srgb,var(--accent) 14%,transparent)}}
+
+/* While paused nothing of the position is visible (the card covers it too: this also hides it from screenshots of the page and from a card that is slow to paint) */
+html[data-paused] .board,html[data-paused] .rack{opacity:.06;pointer-events:none}
+
+/* Local play: the pause button is fixed to a corner of the SCREEN (js/pausefab.js), independent of every panel, rack and layout. */
+.pauseFab{position:fixed;z-index:29;width:44px;height:44px;margin:0;padding:0;display:grid;place-items:center;border-radius:50%;border:1px solid var(--btn-line);color:var(--btn-text);cursor:pointer;
+  background:linear-gradient(var(--btn-1),var(--btn-2));box-shadow:0 2px 8px #0008;opacity:.82;touch-action:none;-webkit-user-select:none;user-select:none}
+.pauseFab[hidden],html[data-online] .pauseFab,html[data-paused] .pauseFab{display:none}
+.pauseFab svg{width:22px;height:22px;fill:currentColor}
+.pauseFab:hover,.pauseFab:focus-visible,.pauseFab.drag{opacity:1}
+.pauseFab:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.pauseFab.drag{cursor:grabbing}
+
+/* Settings: which sections belong to which mode */
+html[data-online] #rkSec,html[data-online] #psSec{display:none}
+html:not([data-online]) #lvSec{display:none}
+.setNote{margin:4px 0 0;font-size:.85rem;opacity:.8;line-height:1.6}
+
+/* Chess clock: the +5 that rises from a clock when a move earns time (js/ui.js bumpClock; the class is removed by a timer) */
+.ptime.inc{position:relative;color:var(--verdict-ok)}
+.ptime.inc::before{content:attr(data-inc);position:absolute;inset-inline-start:0;bottom:100%;font-size:.8em;font-weight:700;color:var(--verdict-ok);pointer-events:none;animation:incUp 1.3s ease-out forwards}
+@keyframes incUp{from{opacity:0;transform:translateY(40%)}20%{opacity:1}to{opacity:0;transform:translateY(-70%)}}

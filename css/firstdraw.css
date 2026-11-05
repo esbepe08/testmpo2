@@ -1,0 +1,43 @@
+/* "Who starts?" card (js/firstdraw.js): one card on a dimmed, blurred backdrop; tiles rise, flip, the winner lifts. Calm: nothing loops except a soft bob while waiting for a tap. */
+.fdOv{position:fixed;inset:0;z-index:9998;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));
+  background:color-mix(in srgb,var(--backdrop,#000) 78%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);opacity:0;transition:opacity .25s ease}
+.fdOv.on{opacity:1}.fdOv.out{opacity:0}
+.fdCard{width:min(94vw,520px);display:grid;gap:14px;justify-items:center;text-align:center;padding:24px 18px 20px;border-radius:22px;background:var(--dialog-bg);color:var(--text-main);
+  border:1px solid var(--dialog-line);box-shadow:0 24px 70px #0009;outline:none}
+.fdCard h2{margin:0;font-size:clamp(1.3rem,5vw,1.7rem)}
+.fdSub{margin:0;min-height:1.6em;opacity:.85;line-height:1.6}
+.fdStage{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;width:100%;perspective:900px;padding:6px 0}
+.fdSlot{display:grid;justify-items:center;gap:8px;transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .45s}
+.fdName{font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fdVal{min-height:1.5em;font-size:.9rem;opacity:.9;font-variant-numeric:tabular-nums}
+.fdVs{font:700 1.4rem var(--font);opacity:.45}
+.fdTile{--lf:54px;--vf:19px;position:relative;width:min(26vw,104px);aspect-ratio:1;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:default;border-radius:14%}
+.fdTile:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+.fdIn{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+.fdFace{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fdFront{transform:rotateY(180deg)}
+.fdTile.flip .fdIn{transform:rotateY(180deg)}
+.fdTile .tile{cursor:inherit;box-shadow:0 8px 18px #0006}
+.fdTile .tile.back{opacity:1}
+.fdTile.ready{cursor:pointer}
+.fdTile.ready::before{content:"";position:absolute;inset:-7px;border-radius:20%;border:2px solid var(--accent);opacity:.55}
+.fdMsg{margin:0;min-height:1.6em;font-weight:700;font-size:1.05rem;color:var(--accent)}
+.fdAct{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;width:100%}
+.fdAct .btn{min-height:48px;flex:1 1 150px}
+.fdSlot.win{transform:translateY(-8px) scale(1.07)}
+.fdSlot.win .fdTile .tile{box-shadow:0 0 0 3px var(--accent),0 0 26px color-mix(in srgb,var(--accent) 60%,transparent),0 10px 20px #0007}
+.fdSlot.lose{transform:scale(.92);opacity:.55}
+@media(prefers-reduced-motion:no-preference){
+  .fdStage.rise .fdSlot{animation:fdRise .6s cubic-bezier(.2,.9,.25,1) backwards}
+  .fdStage.rise .fdSlot:last-of-type{animation-delay:.14s}
+  .fdTile.ready{animation:fdBob 2.8s ease-in-out infinite}
+  .fdTile.ready::before{animation:fdPulse 2.8s ease-in-out infinite}
+  .fdTile.tie{animation:fdShake .45s}
+  .fdOv.on .fdCard{animation:ovIn .25s ease-out}
+}
+@media(prefers-reduced-motion:reduce){.fdIn,.fdSlot,.fdOv{transition:none}}
+@keyframes fdRise{from{opacity:0;transform:translateY(46px) rotate(-5deg) scale(.9)}to{opacity:1;transform:none}}
+@keyframes fdBob{50%{transform:translateY(-5px)}}
+@keyframes fdPulse{50%{opacity:.15;transform:scale(1.06)}}
+@keyframes fdShake{20%{transform:translateX(-5px)}45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
+html[data-online] #fdSec{display:none}
